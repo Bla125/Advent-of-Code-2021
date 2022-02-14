@@ -1,0 +1,108 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    DAY1P2.
+       AUTHOR.        MATTHEW.
+      *
+       ENVIRONMENT DIVISION.
+      *
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IN-DATA ASSIGN TO INDATA.
+           SELECT OUT-DATA ASSIGN TO OUTDATA.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  IN-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  IN-DATA-REC       PIC X(80).
+
+       FD  OUT-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  OUT-DATA-REC      PIC X(80).
+
+       WORKING-STORAGE SECTION.
+       01  WS-SWITCHES.
+           05 EOF            PIC X(1) VALUE 'N'.
+           05 END-OF-INDEX   PIC X(1) VALUE 'N'.
+
+       01  WS-TABLES.
+           05 INPUT-NUM      PIC 9(4) OCCURS 2000 TIMES.
+
+       01  WS-INDEX.
+           05 I              PIC 9(4) VALUE 1.
+           05 INDEX-RANGE    PIC 9(4) VALUE 1.
+
+       01 A1                 PIC 9(4) VALUE 1.
+       01 A2                 PIC 9(4) VALUE 2.
+       01 A3                 PIC 9(4) VALUE 3.
+
+       01 B1                 PIC 9(4) VALUE 2.
+       01 B2                 PIC 9(4) VALUE 3.
+       01 B3                 PIC 9(4) VALUE 4.
+
+       01  TOTAL-A           PIC 9(5) VALUE 0.
+       01  TOTAL-B           PIC 9(5) VALUE 0.
+       01  LARGER-TOTAL      PIC 9(4) VALUE 0.
+       PROCEDURE DIVISION.
+      *
+      *=============
+       MAIN SECTION.
+      *=============
+       A000-START.
+           OPEN INPUT IN-DATA.
+           OPEN OUTPUT OUT-DATA.
+
+           PERFORM A100-READ-FILE.
+           PERFORM A200-CHECK-NUMBERS.
+           PERFORM A300-WRITE-OUTPUT.
+
+
+           CLOSE IN-DATA.
+           CLOSE OUT-DATA.
+      *=============
+       MAIN-EXIT.
+      *=============
+       A000-END.
+           GOBACK.
+
+
+       A100-READ-FILE.
+           PERFORM UNTIL EOF = 'Y'
+              READ IN-DATA
+                 AT END
+                    MOVE 'Y' TO EOF
+                 NOT AT END
+                    UNSTRING IN-DATA-REC DELIMITED BY SPACES 
+                       INTO INPUT-NUM(I)
+                    COMPUTE I = I + 1
+                    COMPUTE INDEX-RANGE = INDEX-RANGE + 1
+              END-READ
+           END-PERFORM
+
+           .
+
+
+       A200-CHECK-NUMBERS.
+           PERFORM UNTIL END-OF-INDEX = 'Y'          
+              COMPUTE TOTAL-A = INPUT-NUM(A1) + 
+                                INPUT-NUM(A2) +
+                                INPUT-NUM(A3)  
+
+              COMPUTE TOTAL-B = INPUT-NUM(B1) + 
+                                INPUT-NUM(B2) +
+                                INPUT-NUM(B3)   
+
+              IF TOTAL-B > TOTAL-A THEN
+                 COMPUTE LARGER-TOTAL = LARGER-TOTAL + 1
+              END-IF
+
+              ADD 1 TO A1, A2, A3, B1, B2, B3
+
+              IF A3 > INDEX-RANGE OR B3 > INDEX-RANGE THEN
+                 MOVE 'Y' TO END-OF-INDEX
+              END-IF 
+           END-PERFORM
+           .
+
+
+       A300-WRITE-OUTPUT.           
+           MOVE LARGER-TOTAL TO OUT-DATA-REC
+           WRITE OUT-DATA-REC
+           .

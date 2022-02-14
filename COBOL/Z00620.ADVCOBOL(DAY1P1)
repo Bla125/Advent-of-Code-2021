@@ -1,0 +1,94 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    DAY1P1.
+       AUTHOR.        MATTHEW.
+      *
+       ENVIRONMENT DIVISION.
+      *
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IN-DATA ASSIGN TO INDATA.
+           SELECT OUT-DATA ASSIGN TO OUTDATA.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  IN-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  IN-DATA-REC       PIC X(80) VALUE SPACES.
+
+       FD  OUT-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  OUT-DATA-REC      PIC X(80) VALUE SPACES.
+
+       WORKING-STORAGE SECTION.
+       01  WS-SWITCHES.
+           05 EOF            PIC X(1) VALUE 'N'.
+       01  WS-TABLE.
+           05 INPUT-NUM      PIC 9(4) OCCURS 2000 TIMES.
+       01  WS-INDEX.
+           05  I             PIC 9(4) VALUE 1.
+           05  INDEX-RANGE   PIC 9(4) VALUE 1.
+       01  LARGER-TOTAL      PIC 9(4) VALUE 0.
+       PROCEDURE DIVISION.
+      *
+
+      *==============
+       MAIN SECTION.
+      *==============
+      * START OF THE PROGRAM
+       A000-START.
+      * OPEN INPUT AND OUTPUT DATASETS
+           OPEN INPUT IN-DATA.
+           OPEN OUTPUT OUT-DATA.
+
+      * READ FILE UNTIL END OF FILE
+           PERFORM A100-READ-FILE UNTIL EOF = 'Y'.
+      * I IS THE TABLE INDEX. RESET TO 2 LOOPING THROUGH INPUT-NUM
+      * DON'T NEED TO CHECK FIRST NUMBER, SO RESET TO 2
+           MOVE 2 TO I.
+           PERFORM A200-CHECK-NUMBERS UNTIL I > INDEX-RANGE.
+           MOVE 1 TO I.
+      * WRITE TO OUTPUT DATASET
+           PERFORM A300-WRITE-OUTPUT.
+
+           CLOSE IN-DATA.
+           CLOSE OUT-DATA.
+      *==============
+       MAIN-EXIT.
+      *==============
+      * END OF THE PROGRAM
+       A000-END.
+           GOBACK.
+
+
+      * OPEN INPUT FILE AND STORE DATA IN INPUT-NUM TABLE
+       A100-READ-FILE.
+              READ IN-DATA
+                 AT END
+                    MOVE 'Y' TO EOF
+                 NOT AT END
+                    UNSTRING IN-DATA-REC DELIMITED BY SPACE
+                       INTO INPUT-NUM(I)
+                    COMPUTE I = I + 1
+                    COMPUTE INDEX-RANGE = INDEX-RANGE + 1
+           .
+
+
+      * CHECK IF NEXT NUM IN INPUT-NUM IS GREATER THAN THE LAST
+       A200-CHECK-NUMBERS.
+           IF INPUT-NUM(I) > INPUT-NUM(I - 1) THEN
+              COMPUTE LARGER-TOTAL = LARGER-TOTAL + 1
+           END-IF
+           COMPUTE I = I + 1
+           .
+
+
+
+
+      * WRITE TO OUTPUT FILE
+       A300-WRITE-OUTPUT.
+           MOVE LARGER-TOTAL TO OUT-DATA-REC
+           WRITE OUT-DATA-REC
+           .
+
+
+
+
+
