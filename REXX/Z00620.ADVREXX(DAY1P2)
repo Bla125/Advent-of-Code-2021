@@ -1,0 +1,33 @@
+/* REXX */
+
+"FREE FI(INDD)"
+"FREE FI(OUTDD)"
+"ALLOC FI(INDD) DA('Z00620.ADVINPUT(DAY1IN)') SHR REUSE"
+"ALLOC FI(OUTDD) DA('Z00620.ADVREXX(OUTPUT)') SHR REUSE"
+
+"EXECIO * DISKR INDD (FINIS STEM input_num."
+"FREE FI(INDD)"
+
+larger_total = 0
+
+do i = 1 to input_num.0
+    a1 = i
+    a2 = i+1
+    a3 = i+2
+    b1 = i+1
+    b2 = i+2
+    b3 = i+3
+
+    if b3 > input_num.0 then
+    leave
+
+    total_a = input_num.a1 + input_num.a2 + input_num.a3
+    total_b = input_num.b1 + input_num.b2 + input_num.b3
+
+    if total_b > total_a then
+        larger_total = larger_total + 1   
+end
+
+push larger_total
+"EXECIO 1 DISKW OUTDD (FINIS"
+"FREE FI(OUTDD)"
