@@ -1,0 +1,36 @@
+/* REXX */
+numeric digits(10)
+
+"FREE FI(INDD)"
+"FREE FI(OUTDD)"
+"ALLOC FI(INDD) DA('Z00620.ADVINPUT(DAY2IN)') SHR REUSE"
+"ALLOC FI(OUTDD) DA('Z00620.ADVREXX(OUTPUT)') SHR REUSE"
+
+"EXECIO * DISKR INDD (FINIS STEM line."
+"FREE FI(INDD)"
+
+horizontal = 0
+depth = 0
+aim = 0
+total = 0
+
+do i = 1 to line.0
+    parse var line.i phrase ' ' num
+    select
+        when phrase = 'forward' then 
+        do
+            horizontal = horizontal + num
+            depth = depth + (aim * num)
+        end
+        when phrase = 'down' then
+            aim = aim + num
+        when phrase = 'up' then
+            aim = aim - num
+        otherwise
+    end
+end
+
+total = horizontal * depth
+push total
+"EXECIO 1 DISKW OUTDD (FINIS"
+"FREE FI(OUTDD)"
