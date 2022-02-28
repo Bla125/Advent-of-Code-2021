@@ -1,0 +1,199 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.    DAY3P2.
+       AUTHOR.        MATTHEW.
+      *
+       ENVIRONMENT DIVISION.
+      *
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IN-DATA ASSIGN TO INDATA.
+           SELECT OUT-DATA ASSIGN TO OUTDATA.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  IN-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  IN-DATA-REC       PIC X(80).
+
+       FD  OUT-DATA RECORD CONTAINS 80 CHARACTERS RECORDING MODE F.
+       01  OUT-DATA-REC      PIC X(80).
+
+       WORKING-STORAGE SECTION.
+       01  WS-SWITCHES.
+           05 EOF            PIC X(1) VALUE 'N'.
+
+       01  TABLE-NUM.
+           05 INPUT-NUM      PIC 9(12) VALUE 0 OCCURS 1000 TIMES.
+       01  TABLE-ONE.
+           05 ONES           PIC 9(12) VALUE 0 OCCURS 1000 TIMES.
+       01  TABLE-ZERO.
+           05 ZEDS           PIC 9(12) VALUE 0 OCCURS 1000 TIMES.
+
+       01  TABLE-OXYGEN.
+           05 OXYGEN         PIC 9(12) VALUE 0 OCCURS 1000 TIMES.
+       01  TABLE-SCRUBBER.
+           05 SCRUBBER       PIC 9(12) VALUE 0 OCCURS 1000 TIMES.
+
+       01  TABLE-BIN-NUM.
+           05 BIN-NUM        PIC 9(1) VALUE 0 OCCURS 12 TIMES.
+
+       01  INPUT-NUM-RANGE   PIC 9(4) VALUE 1.
+       01  INDEX-RANGE       PIC 9(4) VALUE 1.
+       01  COL-RANGE         PIC 9(2) VALUE 12.
+
+       01  I                 PIC 9(4) VALUE 1.
+       01  J                 PIC 9(4) VALUE 1.
+       01  K                 PIC 9(4) VALUE 1.
+       01  B                 PIC 9(2) VALUE 1.
+
+       01  ZERO-COUNTER      PIC 9(4) VALUE 0.
+       01  ONE-COUNTER       PIC 9(4) VALUE 0.
+
+       01  DEC-VALUE         PIC 9(5) VALUE 0.
+       01  OXYGEN-VALUE      PIC 9(5) VALUE 0.
+       01  SCRUBBER-VALUE    PIC 9(5) VALUE 0.
+       01  LIFE-SUP          PIC 9(7) VALUE 0.
+
+
+
+       PROCEDURE DIVISION.
+      *
+
+      *=============
+       MAIN SECTION.
+      *=============
+       A000-START.
+           OPEN INPUT IN-DATA.
+           OPEN OUTPUT OUT-DATA.
+
+           PERFORM A100-READ-FILE.
+           PERFORM A200-CALC-OXYGEN.
+           PERFORM A300-CALC-SCRUBBER.
+           PERFORM A500-WRITE-OUTPUT.
+
+           CLOSE IN-DATA.
+           CLOSE OUT-DATA.
+      *=============
+       MAIN-EXIT.
+      *=============
+       A000-END.
+           GOBACK.
+
+
+      * STORE DATA IN INPUT-NUM
+       A100-READ-FILE.
+           PERFORM UNTIL EOF = 'Y'
+              READ IN-DATA
+                 AT END
+                    MOVE 'Y' TO EOF
+                 NOT AT END
+                    UNSTRING IN-DATA-REC
+                       INTO INPUT-NUM(I)
+                    COMPUTE I = I + 1
+                    COMPUTE INPUT-NUM-RANGE = INPUT-NUM-RANGE + 1
+              END-READ
+           END-PERFORM
+           COMPUTE I = I - 1
+           COMPUTE INPUT-NUM-RANGE = INPUT-NUM-RANGE - 1
+           .
+
+
+       A200-CALC-OXYGEN.
+           MOVE TABLE-NUM TO TABLE-OXYGEN
+           MOVE INPUT-NUM-RANGE TO INDEX-RANGE
+           MOVE 0 TO TABLE-ONE
+           MOVE 0 TO TABLE-ZERO
+           MOVE 1 TO J
+           MOVE 1 TO K
+           MOVE 1 TO B
+           PERFORM VARYING B FROM 1 BY 1 UNTIL B > COL-RANGE
+              MOVE 1 TO J
+              MOVE 1 TO K
+              MOVE 0 TO ONE-COUNTER
+              MOVE 0 TO ZERO-COUNTER
+              PERFORM VARYING I FROM 1 BY 1 UNTIL I > INDEX-RANGE
+                 IF OXYGEN(I)(B:1) = 1
+                    COMPUTE ONE-COUNTER = ONE-COUNTER + 1
+                    MOVE OXYGEN(I) TO ONES(J)
+                    COMPUTE J = J + 1
+                 ELSE
+                    COMPUTE ZERO-COUNTER = ZERO-COUNTER + 1
+                    MOVE OXYGEN(I) TO ZEDS(K)
+                    COMPUTE K = K + 1
+                 END-IF
+              END-PERFORM
+
+              IF ONE-COUNTER >= ZERO-COUNTER
+                 MOVE TABLE-ONE TO TABLE-OXYGEN
+                 COMPUTE INDEX-RANGE = J - 1
+              ELSE
+                 MOVE TABLE-ZERO TO TABLE-OXYGEN
+                 COMPUTE INDEX-RANGE = K - 1
+              END-IF
+           END-PERFORM
+           MOVE OXYGEN(1) TO TABLE-BIN-NUM 
+           PERFORM A400-BIN-TO-DEC
+           MOVE DEC-VALUE TO OXYGEN-VALUE
+           .
+
+
+       A300-CALC-SCRUBBER.
+           MOVE TABLE-NUM TO TABLE-SCRUBBER
+           MOVE INPUT-NUM-RANGE TO INDEX-RANGE
+           MOVE 0 TO TABLE-ONE
+           MOVE 0 TO TABLE-ZERO
+           MOVE 1 TO J
+           MOVE 1 TO K
+           MOVE 1 TO B
+           PERFORM VARYING B FROM 1 BY 1 UNTIL B > COL-RANGE
+              MOVE 1 TO J
+              MOVE 1 TO K
+              MOVE 0 TO ONE-COUNTER
+              MOVE 0 TO ZERO-COUNTER
+              PERFORM VARYING I FROM 1 BY 1 UNTIL I > INDEX-RANGE
+                 IF SCRUBBER(I)(B:1) = 1
+                    COMPUTE ONE-COUNTER = ONE-COUNTER + 1
+                    MOVE SCRUBBER(I) TO ONES(J)
+                    COMPUTE J = J + 1
+                 ELSE
+                    COMPUTE ZERO-COUNTER = ZERO-COUNTER + 1
+                    MOVE SCRUBBER(I) TO ZEDS(K)
+                    COMPUTE K = K + 1
+                 END-IF
+              END-PERFORM
+
+              IF ZERO-COUNTER <= ONE-COUNTER
+                 MOVE TABLE-ZERO TO TABLE-SCRUBBER
+                 COMPUTE INDEX-RANGE = K - 1
+              ELSE
+                 MOVE TABLE-ONE TO TABLE-SCRUBBER
+                 COMPUTE INDEX-RANGE = J - 1
+              END-IF
+           END-PERFORM
+           MOVE SCRUBBER(1) TO TABLE-BIN-NUM
+           PERFORM A400-BIN-TO-DEC
+           MOVE DEC-VALUE TO SCRUBBER-VALUE
+           .
+
+
+       A400-BIN-TO-DEC.
+           MOVE 0 TO DEC-VALUE
+           COMPUTE DEC-VALUE = BIN-NUM(12) * (2 ** 0) + 
+                               BIN-NUM(11) * (2 ** 1) +
+                               BIN-NUM(10) * (2 ** 2) +
+                               BIN-NUM(9) * (2 ** 3) +
+                               BIN-NUM(8) * (2 ** 4) +
+                               BIN-NUM(7) * (2 ** 5) +
+                               BIN-NUM(6) * (2 ** 6) +
+                               BIN-NUM(5) * (2 ** 7) +
+                               BIN-NUM(4) * (2 ** 8) +
+                               BIN-NUM(3) * (2 ** 9) +
+                               BIN-NUM(2) * (2 ** 10) +
+                               BIN-NUM(1) * (2 ** 11) 
+           .
+
+
+       A500-WRITE-OUTPUT.
+           COMPUTE LIFE-SUP = OXYGEN-VALUE * SCRUBBER-VALUE 
+           MOVE LIFE-SUP TO OUT-DATA-REC
+           WRITE OUT-DATA-REC
+           .
