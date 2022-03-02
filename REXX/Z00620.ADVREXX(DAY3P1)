@@ -1,0 +1,51 @@
+/* REXX */
+
+"ALLOC FI(INDD) DA('Z00620.ADVINPUT(DAY3IN)') SHR REUSE"
+"ALLOC FI(OUTDD) DA('Z00620.ADVREXX(OUTPUT)') SHR REUSE"
+
+"EXECIO * DISKR INDD (FINIS STEM line."
+"FREE FI(INDD)"
+
+line_len = length(strip(line.1))
+one_counter. = 0
+zero_counter. = 0
+
+do i = 1 to line.0
+    do j = 1 to line_len
+        if substr(line.i, j, 1) = 1 then
+            one_counter.j = one_counter.j + 1
+        else
+            zero_counter.j = zero_counter.j + 1
+    end
+end
+
+
+do i = 1 to line_len
+    if one_counter.i >= zero_counter.i then do
+        gamma.i = 1
+        epsilon.i = 0
+    end
+    else do
+        gamma.i = 0
+        epsilon.i = 1
+    end
+end
+
+gamma_bin = ''
+epsilon_bin = ''
+
+do i = 1 to line_len
+    gamma_bin = gamma_bin||gamma.i
+    epsilon_bin = epsilon_bin||epsilon.i
+end
+
+gamma_dec = b2d(gamma_bin)
+epsilon_dec = b2d(epsilon_bin)
+power = gamma_dec * epsilon_dec
+
+push power
+"EXECIO 1 DISKW OUTDD (FINIS"
+"FREE FI(OUTDD)"
+
+
+b2d: return x2d(b2x(arg(1)))

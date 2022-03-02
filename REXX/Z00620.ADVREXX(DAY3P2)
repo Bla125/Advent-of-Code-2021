@@ -1,0 +1,114 @@
+/* REXX */
+
+"ALLOC FI(INDD) DA('Z00620.ADVINPUT(DAY3IN)') SHR REUSE"
+"ALLOC FI(OUTDD) DA('Z00620.ADVREXX(OUTPUT)') SHR REUSE"
+
+"EXECIO * DISKR INDD (FINIS STEM line."
+"FREE FI(INDD)"
+
+
+do i = 1 to line.0
+    oxygen.i = line.i
+    scrubber.i = line.i
+end
+
+oxygen.0 = line.0
+scrubber.0 = line.0
+
+
+one_ctr = 0
+zero_ctr = 0
+
+line_cols = length(strip(line.1))
+
+
+/* find oxygen rating */
+do j = 1 to line_cols
+    ones. = ''
+    zeros = ''
+    one_ctr = 0
+    zero_ctr = 0
+    k = 0
+    n = 0
+    do i = 1 to oxygen.0
+        if substr(oxygen.i, j, 1) = 1 then do
+            one_ctr = one_ctr + 1
+            k = k + 1
+            ones.k = oxygen.i
+        end
+        else do
+            zero_ctr = zero_ctr + 1
+            n = n + 1
+            zeros.n = oxygen.i
+        end
+    end
+
+    if one_ctr >= zero_ctr then do
+        do i = 1 to one_ctr
+            oxygen.i = ones.i
+        end
+        oxygen.0 = k
+    end
+    else do
+        do i = 1 to zero_ctr
+            oxygen.i = zeros.i
+        end
+        oxygen.0 = n
+    end
+    one_ctr = 0
+    zero_ctr = 0
+end
+
+
+/* find scubber rating */
+do j = 1 to line_cols
+    ones. = ''
+    zeros = ''
+    one_ctr = 0
+    zero_ctr = 0
+    k = 0
+    n = 0
+    do i = 1 to scrubber.0
+        if substr(scrubber.i, j, 1) = 1 then do
+            one_ctr = one_ctr + 1
+            k = k + 1
+            ones.k = scrubber.i
+        end
+        else do
+            zero_ctr = zero_ctr + 1
+            n = n + 1
+            zeros.n = scrubber.i
+        end
+    end
+
+    if zero_ctr <= one_ctr then do
+        do i = 1 to zero_ctr
+            scrubber.i = zeros.i
+        end
+        scrubber.0 = n
+    end
+    else do
+        do i = 1 to one_ctr
+            scrubber.i = ones.i
+        end
+        scrubber.0 = k
+    end
+    one_ctr = 0
+    zero_ctr = 0
+end
+
+
+oxygen_bin = strip(oxygen.1)
+scrubber_bin = strip(scrubber.1)
+
+oxygen_dec = b2d(oxygen_bin)
+scrubber_dec = b2d(scrubber_bin)
+
+life_sup = oxygen_dec * scrubber_dec
+
+push life_sup
+"EXECIO 1 DISKW OUTDD (FINIS"
+"FREE FI(OUTDD)"
+
+
+b2d: return x2d(b2x(arg(1)))
