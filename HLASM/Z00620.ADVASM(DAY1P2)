@@ -1,0 +1,175 @@
+//DAY1P2 JOB 'ADVENT OF CODE',
+//       MSGCLASS=A,MSGLEVEL=(1,1),
+//       NOTIFY=&SYSUID
+//ASMCLG EXEC PROC=ASMHCLG
+//SYSIN  DD *
+         PRINT ON,NODATA,NOGEN
+********************************************
+*        REGISTER EQUATES                  *
+********************************************
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+********************************************
+ARRAYFMT DSECT
+INPUTNUM DS    PL3                  DSECT FOR INPUT NUMBER
+INPUTLEN EQU   *-ARRAYFMT           LENGTH OF INPUT NUMBER
+
+GROUP    DSECT
+*                                   DSECT FOR GROUP COMPARISON
+A1       DS    PL3                  FIRST NUM OF GROUP A
+AB2      DS    PL3                  SECOND NUM OF GROUP A, FIRST OF B
+AB3      DS    PL3                  THIRD NUM OF GROUP A, SECOND OF B
+B4       DS    PL3                  THIRD NUM OF GROUP B
+GROUPLEN EQU   *-GROUP              LENGTH OF GROUP
+
+DAY1P2   CSECT
+         STM   R14,R12,12(R13)
+         BASR  R12,0                ESTABLISH...
+         USING *,R12,R11            ADDRESSABILITY
+         LA    R11,2048             LOAD HALF OF 4K INTO R11
+         LA    R11,2048(R12,R11)    2048+R12+R11 = 4K DISPLACE OFF R12 
+         ST    R13,SAVEAREA+4       BACKWARD CHAIN CALLER
+         LA    R13,SAVEAREA         ADDRESS OF MY SAVE AREA
+********************************************
+*        MAIN PROGRAM LOGIC                *
+********************************************
+         OPEN  (FILEIN,(INPUT))     OPEN INPUT FILE
+         OPEN  (FILEOUT,(OUTPUT))   OPEN OUTPUT FILE
+
+         USING ARRAYFMT,R7          R7 USING ARRAYFMT DSECT
+         LA    R7,ARRAY             POSITION DSECT INTO ARRAY
+         LA    R3,0                 START RECORD COUNT IN R3
+
+*        READ RECORDS, PACK NUMBERS INTO ARRAY
+READLOOP EQU   *
+         GET   FILEIN,INREC         READ RECORD FROM FILEIN TO INREC
+         A     R3,=F'1'             ADD 1 TO THE RECORD COUNT
+         PACK  INPUTNUM,INREC(4)    PACK 4 BYTES FROM INREC
+         TP    INPUTNUM             TEST TO SEE IF ALL BYTES ARE VALID
+         BZ    NEXTREC              IF VALID, GO TO NEXTREC, IF NOT
+         PACK  INPUTNUM,INREC(3)    PACK THREE BYTES FROM INREC
+
+NEXTREC  EQU   *
+         LA    R7,INPUTLEN(,R7)     MOVE DSECT FURTHER INTO ARRAY
+         B     READLOOP             BRANCH TO START OF MAINLOOP
+
+
+EOF      EQU   *
+         USING GROUP,R7             R7 USING GROUP DSECT
+         LA    R7,ARRAY             POSITION DSECT INTO ARRAY
+*                                   START COUNT AT END OF GROUPLEN,
+         LA    R3,GROUPLEN          TO TRACK END OF GROUP
+*                             INCREMENT COUNT BY LENGH OF INPUT BECAUSE
+         LA    R4,INPUTLEN      INCREMENTING BY ONE ARRAY REC EACH TIME
+         LA    R8,3000              LENGTH OF ARRAY IS 6000 BYTES
+         LA    R5,3000(R8)          STOP IF HIGHER THAN LENGTH OF ARRAY
+
+
+*        COMPARE FIRST 2,4,6 BYTES WITH 4,6,8 BYTES
+COMPLOOP EQU  *
+*                                   GROUP COMPARISON
+*                               GROUPA    GROUPB
+*                                   A1   
+*                                   AB2   AB2
+*                                   AB3   AB3
+*                                         B4
+         ZAP   GROUPA,A1            ZERO GROUPA AND ADD THREE GROUPNUMS
+         AP    GROUPA,AB2
+         AP    GROUPA,AB3
+
+         ZAP   GROUPB,AB2           ZERO GROUPB AND ADD THREE GROUPNUMS
+         AP    GROUPB,AB3
+         AP    GROUPB,B4
+
+         CP    GROUPB,GROUPA        IS SUM OF GROUPB > GROUPA
+         BNH   CONTINUE             IF NOT, CONTINUE
+         AP    COUNTER,=P'1'        IF SUM IS GREATER, COUNTER + 1
+CONTINUE EQU   *
+         LA    R7,INPUTLEN(,R7)     MOVE DSECT FURTHER INTO ARRAY
+         BXLE  R3,R4,COMPLOOP     BRANCH IF R3 COUNT IS <= LEN OF ARRAY
+*                                 STOP LOOPING IF R3 COUNT IS > LEN
+
+
+         MVC   OUTREC,=CL80' '      MOVE BLANKS TO OUTREC
+         MVC   EDOUT,EDWD           MOVE EDIT WORD TO OUTPUT BUFFER
+         ED    EDOUT,COUNTER        EDIT COUNTER INTO OUTPUT BUFFER
+         MVC   OUTREC(L'EDOUT),EDOUT MOVE EDITED OUTPUT TO OUTREC
+         PUT   FILEOUT,OUTREC       WRITE OUTREC TO FILEOUT
+
+         CLOSE (FILEIN)             CLOSE INPUT FILE
+         CLOSE (FILEOUT)            CLOSE OUTPUT FILE
+
+         L     R13,SAVEAREA+4       POINT AT OLD SAVE AREA
+         LM    R14,R12,12(R13)      RESTORE THE REGISTERS
+         LA    R15,0                RETURN CODE = 0
+         BR    R14                  REUTRN TO THE OPERATING SYSTEM
+********************************************
+*        SYMBOL DECLARATIONS               *
+********************************************
+ARRAY    DS    2000PL(INPUTLEN)
+GROUPA   DC    PL3'0'
+GROUPB   DC    PL3'0'
+COUNTER  DC    PL3'0'
+EDWD     DC    X'2020202020'
+EDOUT    DS    XL5
+
+********************************************
+*        INPUT FILE - DATA CONTROL BLOCK   *
+********************************************
+FILEIN   DCB   DSORG=PS,                                               X
+               MACRF=(GM),                                             X
+               DDNAME=FILEIN,                                          X
+               RECFM=FB,                                               X
+               EODAD=EOF,                                              X
+               LRECL=80
+
+********************************************
+*        INPUT RECORD AREA                 *
+********************************************
+INREC    DS    CL80
+
+********************************************
+*        OUTPUT FILE - DATA CONTROL BLOCK  *
+********************************************
+FILEOUT  DCB   DSORG=PS,                                               X
+               MACRF=(PM),                                             X
+               DDNAME=FILEOUT,                                         X
+               RECFM=FB,                                               X
+               LRECL=80
+********************************************
+*        OUTPUT RECORD AREA                *
+********************************************
+OUTREC   DS    CL80
+
+********************************************
+*        REGISTER SAVE AREA                *
+********************************************
+SAVEAREA DS    18F
+
+********************************************
+*        LITERAL POOL                      *
+********************************************
+         LTORG *
+
+********************************************
+*        END OF PROGRAM                    *
+********************************************
+         END   DAY1P2
+/*
+//G.SYSUDUMP   DD SYSOUT=*
+//G.FILEIN     DD DSN=Z00620.ADVINPUT(DAY1IN),DISP=SHR
+//G.FILEOUT    DD DSN=Z00620.ADVASM(OUTPUT),DISP=SHR

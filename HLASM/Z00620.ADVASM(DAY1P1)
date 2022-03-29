@@ -1,0 +1,131 @@
+//DAY1P1 JOB 'ADVENT OF CODE',
+//       MSGCLASS=A,MSGLEVEL=(1,1),
+//       NOTIFY=&SYSUID
+//ASMCLG EXEC PROC=ASMHCLG
+//SYSIN  DD *
+         PRINT ON,NODATA,NOGEN
+********************************************
+*        REGISTER EQUATES                  *
+********************************************
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+********************************************
+DAY1P1   CSECT
+         STM   R14,R12,12(R13)
+         BASR  R12,0                ESTABLISH...
+         USING *,12                 ADDRESSABILITY
+         ST    R13,SAVEAREA+4       BACKWARD CHAIN CALLER
+         LA    R13,SAVEAREA         ADDRESS OF MY SAVE AREA
+********************************************
+*        MAIN PROGRAM LOGIC                *
+********************************************
+         OPEN  (FILEIN,(INPUT))     OPEN THE INPUT FILE
+         OPEN  (FILEOUT,(OUTPUT))   OPEN THE OUTPUT FILE
+
+         GET   FILEIN,INREC         READ RECORD FROM FILEIN TO INREC
+         PACK  NUM1,INREC(4)        PACK FOUR BYTES FROM INREC
+         TP    NUM1                 TEST TO SEE IF ALL BYTES ARE VALID
+         BZ    MAINLOOP             IF VALID, GO TO MAINLOOP, IF NOT
+         PACK  NUM1,INREC(3)        PACK THREE BYTES
+
+MAINLOOP EQU   *
+         GET   FILEIN,INREC         READ RECORD FROM FILEIN TO INREC
+         PACK  NUM2,INREC(4)        PACK FOUR BYTES FROM INREC
+         TP    NUM2                 TEST TO SEE IF ALL BYTES ARE VALID
+         BZ    COMPARE              IF VALID, GO TO COMPARE, IF NOT
+         PACK  NUM2,INREC(3)        PACK THREE BYTES
+
+COMPARE  EQU   *
+         CP    NUM2,NUM1            COMPARE NUM2 WITH NUM1
+         BNH   CONTINUE             IF NUM2 IS NOT HIGHER,GOTO CONTINUE
+         AP    COUNTER,=P'1'        IF NUM2 > NUM1, INCREASE COUNTER
+
+CONTINUE EQU   *
+         ZAP   NUM1,NUM2            MOVE NUM2 INTO NUM1
+         B     MAINLOOP             BRANCH TO START OF MAINLOOP
+
+
+EOF      EQU   *
+         MVC   OUTREC,=CL80' '      MOVE BLANKS TO OUTREC
+         MVC   EDOUT,EDWD           MOVE EDIT WORD TO OUTPUT BUFFER
+         ED    EDOUT,COUNTER        EDIT COUNTER INTO OUTPUT BUFFER
+         MVC   OUTREC(5),EDOUT      MOVE EDITED OUTPUT INTO OUTREC
+         PUT   FILEOUT,OUTREC       WRITE OUTREC TO FILEOUT
+
+         CLOSE (FILEIN)
+         CLOSE (FILEOUT)
+
+         L     R13,SAVEAREA+4       POINT AT OLD SAVE AREA
+         LM    R14,R12,12(R13)      RESTORE THE REGISTERS
+         LA    R15,0                RETURN CODE = 0
+         BR    R14                  RETURN TO THE OPERATING SYSTEM
+********************************************
+*        SYMBOL DECLARATIONS               *
+********************************************
+COUNTER  DC    PL3'0'
+NUM1     DS    PL3
+NUM2     DS    PL3
+EDWD     DC    X'2020202020'
+EDOUT    DS    XL5
+
+********************************************
+*        INPUT FILE - DATA CONTROL BLOCK   *
+********************************************
+FILEIN   DCB   DSORG=PS,                                               X
+               MACRF=(GM),                                             X
+               DDNAME=FILEIN,                                          X
+               RECFM=FB,                                               X
+               EODAD=EOF,                                              X
+               LRECL=80
+
+********************************************
+*        INPUT RECORD AREA                 *
+********************************************
+INREC    DS    CL80
+
+********************************************
+*        OUTPUT FILE - DATA CONTROL BLOCK  *
+********************************************
+FILEOUT  DCB   DSORG=PS,                                               X
+               MACRF=(PM),                                             X
+               DDNAME=FILEOUT,                                         X
+               RECFM=FB,                                               X
+               LRECL=80
+
+********************************************
+*        OUTPUT RECORD AREA                *
+********************************************
+OUTREC   DS    CL80
+
+********************************************
+*        REGISTER SAVE AREA                *
+********************************************
+SAVEAREA DS    18F
+
+********************************************
+*        LITERAL POOL                      *
+********************************************
+         LTORG *
+
+********************************************
+*        END OF PROGRAM                    *
+********************************************
+         END   DAY1P1
+/*
+//G.SYSUDUMP   DD SYSOUT=*
+//G.FILEIN     DD DSN=Z00620.ADVINPUT(DAY1IN),DISP=SHR
+//G.FILEOUT    DD DSN=Z00620.ADVASM(OUTPUT),DISP=SHR
