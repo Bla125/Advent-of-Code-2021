@@ -1,0 +1,282 @@
+//DAY3P1 JOB 0,'ADVENT OF CODE',
+//       MSGCLASS=A,MSGLEVEL=(1,1),
+//       NOTIFY=&SYSUID
+//ASMCLG EXEC PROC=ASMHCLG
+//SYSIN  DD *
+         PRINT ON,NODATA,NOGEN
+********************************************
+*        REGISTER EQUATES                  *
+********************************************
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+********************************************
+DAY3P1   CSECT
+         STM   R14,R12,12(R13)
+         BASR  R12,0                ESTABLISH
+         USING *,R12                ADDRESSABILITY
+         ST    R13,SAVEAREA+4       BACKWARD CHAIN CALLER
+         LA    R13,SAVEAREA         ADDRESS OF MY SAVE AREA
+********************************************
+*        MAIN PROGRAM LOGIC                *
+********************************************
+         OPEN  (FILEIN,(INPUT))     OPEN FILEIN FOR INPUT
+         OPEN  (FILEOUT,(OUTPUT))   OPEN FILEOUT FOR OUTPUT
+
+READLOOP EQU   *
+         GET   FILEIN,INREC         READ RECORD FROM FILEIN TO INREC
+         PACK  PACKNUM,INONE
+         AP    DIGONE,PACKNUM
+
+         PACK  PACKNUM,INTWO
+         AP    DIGTWO,PACKNUM
+
+         PACK  PACKNUM,INTHREE
+         AP    DIGTHREE,PACKNUM
+
+         PACK  PACKNUM,INFOUR
+         AP    DIGFOUR,PACKNUM
+
+         PACK  PACKNUM,INFIVE
+         AP    DIGFIVE,PACKNUM
+
+         PACK  PACKNUM,INSIX
+         AP    DIGSIX,PACKNUM
+
+         PACK  PACKNUM,INSEVEN
+         AP    DIGSEVEN,PACKNUM
+
+         PACK  PACKNUM,INEIGHT
+         AP    DIGEIGHT,PACKNUM
+
+         PACK  PACKNUM,INNINE
+         AP    DIGNINE,PACKNUM
+
+         PACK  PACKNUM,INTEN
+         AP    DIGTEN,PACKNUM
+
+         PACK  PACKNUM,INELEVEN
+         AP    DIGELEVEN,PACKNUM
+
+         PACK  PACKNUM,INTWELVE
+         AP    DIGTWELVE,PACKNUM
+         B     READLOOP
+
+
+EOF      EQU   *
+*              EACH LOOP INCREMENTS R3 BY 1 UNTIL R3 > R5
+         SR    R3,R3                SET THE COUNT TO 0
+         LA    R4,1                 SET THE INCREMENT TO 1
+         LA    R5,11                SET THE LIMIT TO 4
+
+         LA    R6,DIGITCNT          LOAD ADDRESS OF DIGITCNT TO R6
+         LA    R7,GAMMA             LOAD ADDRESS OF GAMMA TO R7
+         LA    R8,EPSILON           LOAD ADDRESS OF EPSILON TO R8
+
+COMPLOOP EQU   *
+         CP    0(3,R6),=P'499'       COMPARE 5 WITH DIGITCNT
+         BNH   LOW                  IF NOT GREATER THAN 5, BRANCH, ELSE
+         MVI   0(R7),C'1'           MOVE 1 INTO GAMMA
+         MVI   0(R8),C'0'           MOVE 0 INTO EPSILON
+CONT     EQU   *
+         LA    R6,3(,R6)            LOAD NEXT BYTE OF DIGITCNT INTO R6
+         LA    R7,1(,R7)            LOAD NEXT BYTE OF GAMMA INTO R7
+         LA    R8,1(,R8)            LOAD NEXT BYTE OF EPSILON INTO R8
+         BXLE  R3,R4,COMPLOOP
+
+         B     BINTODEC             COMPLOOP FINISHED, BRANCH TO WRITE
+
+LOW      EQU   *
+         MVI   0(R7),C'0'           MOVE 0 INTO GAMMA
+         MVI   0(R8),C'1'           MOVE 1 INTO EPSILON
+         B     CONT                 CONTINUE COMPLOOP
+
+
+BINTODEC EQU   *
+*              EACH LOOP INCREMENTS R3 BY 1 UNTIL R3 > R5
+         SR    R3,R3                SET THE COUNT TO 0
+         LA    R4,1                 SET THE INCREMENT TO 1
+         LA    R5,11                 SET THE LIMIT TO 4
+
+         L     R6,=F'-1'            LOAD R6 WITH -1 FOR REVERSING
+*                                   THROUGH GAMMA AND EPSILON
+         LA    R7,GAMMA+11          LOAD END OF ADDRESS OF GAMMA TO R7
+         LA    R8,EPSILON+11      LOAD END OF ADDRESS OF EPSILON TO R8
+*                                   CONVERT FROM BINARY TO DECIMAL
+*                                   HIGH ORDER BIT HAS HIGHEST POWER
+*                                   MULTIPLY BY 2 TO POWER OF POSITION
+*                                   1  1 1 0 1
+*                                   16 8 4 2 1
+*                                   1 * 2^0 = 1 * 1
+*                                   0 * 2^1 = 1 * 2
+*                                   1 * 2^2 = 1 * 4
+*                                   1 * 2^3 = 1 * 8
+*                                   1 * 2^4 = 1 * 16
+CONVERT  EQU   *
+         PACK  PACKNUM,0(1,R7)     PACK 1 BYTE FROM GAMMA INTO PACKNUM
+         MP    PACKNUM,POWER        MULTIPLY BYTE BY 2^POSITION
+         AP    GAMPACK,PACKNUM      ADD RESULT TO GAMPACK
+
+         PACK  PACKNUM,0(1,R8)   PACK 1 BYTE FROM EPSILON INTO PACKNUM
+         MP    PACKNUM,POWER        MULTIPLY BYTE BY 2^POSITION
+         AP    EPSPACK,PACKNUM      ADD RESULT TO EPSPACK
+
+         MP    POWER,=P'2'          DOUBLE POWER VALUE
+         LA    R7,0(R6,R7)          LOAD NEXT BYTE OF GAMMA INTO R7
+*                                   GOING BACKWARDS BY -1
+         LA    R8,0(R6,R8)          LOAD NEXT BYTE OF GAMMA INTO R8
+*                                   GOING BACKWARDS BY -1
+         BXLE  R3,R4,CONVERT
+
+
+WRITEOUT EQU   *
+
+         ZAP   ANSWER,GAMPACK
+         MP    ANSWER,EPSPACK
+
+         MVC   EDOUT,EDWD
+         ED    EDOUT,ANSWER
+         MVC   OUTREC,=CL80' '
+         MVC   OUTREC(L'EDOUT),EDOUT
+         PUT   FILEOUT,OUTREC
+
+         CLOSE (FILEIN)
+         CLOSE (FILEOUT)
+
+         L     R13,SAVEAREA+4       POINT AT OLD SAVE AREA
+         LM    R14,R12,12(R13)      RESTORE REGISTERS
+         LA    R15,0                RETURN CODE = 0
+         BR    R14                  RETURN TO THE OPERATING SYSTEM
+********************************************
+*        SYMBOL DECLARATIONS               *
+********************************************
+EDWD     DC    X'2020202020202020202020202020202020'
+EDOUT    DS    XL17
+
+ANSWER   DC    PL9'0'
+
+PACKNUM  DC    PL7'0'
+
+GAMPACK  DC    PL5'0'
+EPSPACK  DC    PL5'0'
+
+POWER    DC    PL5'1'
+
+*GAMMA    DS    CL5                  GAMMA DIGITS
+GAMMA    DS    CL12                  GAMMA DIGITS
+
+*EPSILON  DS    CL5                  EPSILON DIGITS
+EPSILON  DS    CL12                  EPSILON DIGITS
+
+DIGITCNT DC    PL3'0'              DIGIT TRACKER
+         ORG   DIGITCNT
+DIGONE   DC    PL3'0'
+         ORG   DIGITCNT+3
+DIGTWO   DC    PL3'0'
+         ORG   DIGITCNT+6
+DIGTHREE DC    PL3'0'
+         ORG   DIGITCNT+9
+DIGFOUR  DC    PL3'0'
+         ORG   DIGITCNT+12
+DIGFIVE  DC    PL3'0'
+         ORG   DIGITCNT+15
+DIGSIX   DC    PL3'0'
+         ORG   DIGITCNT+18
+DIGSEVEN DC    PL3'0'
+         ORG   DIGITCNT+21
+DIGEIGHT DC    PL3'0'
+         ORG   DIGITCNT+24
+DIGNINE  DC    PL3'0'
+         ORG   DIGITCNT+27
+DIGTEN   DC    PL3'0'
+         ORG   DIGITCNT+30
+DIGELEVEN DC    PL3'0'
+         ORG   DIGITCNT+33
+DIGTWELVE DC    PL3'0'
+         ORG   ,
+
+********************************************
+*        INPUT FILE - DATA CONTROL BLOCK   *
+********************************************
+FILEIN   DCB   DDNAME=FILEIN,                                          X
+               MACRF=(GM),                                             X
+               DSORG=PS,                                               X
+               RECFM=FB,                                               X
+               LRECL=80,                                               X
+               EODAD=EOF
+
+********************************************
+*        INPUT RECORD AREA                 *
+********************************************
+INREC    DS    CL80           FORMAT OF THE INPUT RECORD
+         ORG   INREC
+INONE    DS    CL1                  FIRST DIGIT
+         ORG   INREC+1
+INTWO    DS    CL1                  SECOND DIGIT
+         ORG   INREC+2
+INTHREE  DS    CL1                  THIRD DIGIT
+         ORG   INREC+3
+INFOUR   DS    CL1                  FOURTH DIGIT
+         ORG   INREC+4
+INFIVE   DS    CL1                  FIFTH DIGIT
+         ORG   INREC+5
+INSIX    DS    CL1
+         ORG   INREC+6
+INSEVEN  DS    CL1
+         ORG   INREC+7
+INEIGHT  DS    CL1
+         ORG   INREC+8
+INNINE   DS    CL1
+         ORG   INREC+9
+INTEN    DS    CL1
+         ORG   INREC+10
+INELEVEN DS    CL1
+         ORG   INREC+11
+INTWELVE DS    CL1
+         ORG   ,
+
+********************************************
+*        OUTPUT FILE - DATA CONTROL BLOCK  *
+********************************************
+FILEOUT  DCB   DDNAME=FILEOUT,                                         X
+               MACRF=(PM),                                             X
+               DSORG=PS,                                               X
+               RECFM=FB,                                               X
+               LRECL=80
+
+********************************************
+*        OUTPUT RECORD AREA                *
+********************************************
+OUTREC   DS    CL80
+
+********************************************
+*        REGISTER SAVE AREA                *
+********************************************
+SAVEAREA DS    18F
+
+********************************************
+*        LITERAL POOL                      *
+********************************************
+         LTORG *
+
+********************************************
+*        END OF PROGRAM                    *
+********************************************
+         END   DAY3P1
+/*
+//G.SYSUDUMP   DD SYSOUT=*
+//G.FILEIN     DD DSN=Z00620.ADVINPUT(DAY3IN),DISP=SHR
+//G.FILEOUT    DD DSN=Z00620.ADVASM(OUTPUT),DISP=SHR
